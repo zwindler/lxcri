@@ -195,6 +195,10 @@ func (rt *Runtime) Init() error {
 		return errorf("liblxc runtime version is %s, but >= 3.1.0 is required", lxc.Version())
 	}
 
+	// TODO check support for cgroup devices
+	//   rt.CgroupDevices = false
+	// c.Log.Warn().Msg("cgroup device controller is disabled for liblxc versions < 4.0.6")
+
 	if !lxc.VersionAtLeast(4, 0, 9) {
 		rt.Log.Warn().Msgf("liblxc runtime version >= 4.0.9 is required for lxc.init.groups support (was %s)", lxc.Version())
 	}
