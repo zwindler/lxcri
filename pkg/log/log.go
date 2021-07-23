@@ -69,5 +69,5 @@ func NewLogger(out io.Writer, level zerolog.Level) zerolog.Context {
 
 // ConsoleLogger returns a new zerlog.Logger suited for console usage (e.g unit tests)
 func ConsoleLogger(color bool, level zerolog.Level) zerolog.Context {
-	return zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, NoColor: !color, TimeFormat: TimeFormat}).Level(level).With().Timestamp().Caller()
+	return zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: !color, TimeFormat: TimeFormat}).Level(level).With().Timestamp().Caller()
 }

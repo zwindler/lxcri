@@ -210,7 +210,7 @@ func (rt *Runtime) Init() error {
 }
 
 // ConfigureLogger creates the logger instance for the Runtime.
-// The ContainerLogFile  is set to /dev/stdout if LogConsole is enabled.
+// The ContainerLogFile is set to /dev/stderr if LogConsole is enabled.
 // ConfigureLogger is already called from Init.
 // NOTE: Don't call ConfigureLogger while the logger is in use.
 func (rt *Runtime) ConfigureLogger() error {
@@ -229,7 +229,10 @@ func (rt *Runtime) ConfigureLogger() error {
 		// TODO use console logger if filepath is /dev/stdout or /dev/stderr ?
 		logCtx = log.ConsoleLogger(true, level)
 		// FIXME not a good idea to change the configuration here
-		rt.LogConfig.ContainerLogFile = "/dev/stdout"
+		// NOTE don't use stdout because commands that output JSON (state, inspect)
+		// will output the JSON to stdout. Any other output messes up the JSON,
+		// so it can't be processed by tools like `jq`
+		rt.LogConfig.ContainerLogFile = "/dev/stderr"
 	} else {
 		if err := os.MkdirAll(filepath.Dir(rt.LogConfig.LogFile), 0750); err != nil {
 			return err
