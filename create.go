@@ -48,6 +48,18 @@ func (rt *Runtime) Create(ctx context.Context, cfg *ContainerConfig) (*Container
 		return c, err
 	}
 
+	if rt.BackupConfigDir != "" {
+		err := os.MkdirAll(rt.BackupConfigDir, 0700)
+		if err != nil {
+			rt.Log.Warn().Err(err).Str("dir", rt.BackupConfigDir).Msg("failed to create backup dir")
+		}
+		specPath := filepath.Join(rt.BackupConfigDir, cfg.ContainerID+".config.json")
+		err = specki.EncodeJSONFile(specPath, cfg.Spec, os.O_EXCL|os.O_CREATE, 0444)
+		if err != nil {
+			rt.Log.Warn().Err(err).Str("file", specPath).Msg("failed to backup spec")
+		}
+	}
+
 	err = specki.EncodeJSONFile(c.RuntimePath("hooks.json"), cfg.Spec.Hooks, os.O_EXCL|os.O_CREATE, 0444)
 	if err != nil {
 		return c, err

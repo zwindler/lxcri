@@ -101,6 +101,8 @@ type Runtime struct {
 	Timeouts  Timeouts
 
 	ConfigPath string `json:"-"`
+
+	BackupConfigDir string `json:",omitempty"`
 }
 
 // LogConfig is the runtime log configuration.
@@ -390,6 +392,10 @@ func (rt *Runtime) runStartCmd(ctx context.Context, c *Container) (err error) {
 	err = c.LinuxContainer.SaveConfigFile(c.ConfigFilePath())
 	if err != nil {
 		return errorf("failed to save config file to %q: %w", c.ConfigFilePath(), err)
+	}
+
+	if rt.BackupConfigDir != "" {
+		exec.Command("cp", c.ConfigFilePath(), filepath.Join(rt.BackupConfigDir, c.ContainerID+".config")).Run()
 	}
 
 	rt.Log.Debug().Msg("starting lxc monitor process")
