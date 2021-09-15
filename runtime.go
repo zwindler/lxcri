@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	//"syscall"
 	"time"
 
 	"github.com/creack/pty"
@@ -92,9 +93,9 @@ type Runtime struct {
 	caps capability.Capabilities
 
 	// Runtime is running within a preconfigured user namespace.
-	// This is set by `buildah` when runtime is called from a non-root user.
-	// The user namespace must be dropped from the namespace list.
-	// Runtime user detection using os.Getuid() or os.Geteuid() will not work.
+	// This is set by `buildah` when runtime is executed with user permissions.
+	// The user namespace must then be dropped from the namespace list, since
+	// user detection at runtime using os.Getuid() or os.Geteuid() will not work.
 	usernsConfigured bool
 
 	LogConfig LogConfig
@@ -148,6 +149,7 @@ func (rt *Runtime) isPrivileged() bool {
 		// the uidmap maps the root user to itself.
 		return false
 	}
+
 	// FIXME use os.Geteuid() ?
 	return os.Getuid() == 0
 }
@@ -375,6 +377,8 @@ func (rt *Runtime) runStartCmd(ctx context.Context, c *Container) (err error) {
 	cmd := exec.Command(rt.libexec(ExecStart), c.LinuxContainer.Name(), rt.Root, c.ConfigFilePath())
 	cmd.Env = rt.env // environment variables required for liblxc
 	cmd.Dir = c.Spec.Root.Path
+	//cmd.SysProcAttr = &syscall.SysProcAttr{}
+	//cmd.SysProcAttr.Credential = &syscall.Credential{Uid: 100000, Gid: 100000}
 
 	if c.ConsoleSocket == "" && !c.Spec.Process.Terminal {
 		// Inherit stdio from calling process (conmon).

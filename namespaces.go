@@ -88,7 +88,7 @@ func getNamespace(spec *specs.Spec, nsType specs.LinuxNamespaceType) *specs.Linu
 }
 
 // isNamespaceSharedWithHost returns true if the given namespace is nil.
-// If the given namespace is not nil then the namespace then true is
+// If the given namespace is not nil then true is
 // returned if the namespace path refers to the host namespace and
 // false otherwise.
 // Should be used with isNamespaceSharedWithHost(getNamespace(...))

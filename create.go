@@ -40,7 +40,7 @@ func (rt *Runtime) Create(ctx context.Context, cfg *ContainerConfig) (*Container
 
 	cleanenv(c, true)
 
-	// Seralize the modified spec.Spec separately, to make it available for
+	// Serialize the modified spec.Spec separately, to make it available for
 	// runtime hooks.
 	specPath := c.RuntimePath(BundleConfigFile)
 	err := specki.EncodeJSONFile(specPath, cfg.Spec, os.O_EXCL|os.O_CREATE, 0444)
@@ -79,6 +79,87 @@ func (rt *Runtime) Create(ctx context.Context, cfg *ContainerConfig) (*Container
 	return c, nil
 }
 
+func configureUserNamespace(rt *Runtime, c *Container) {
+	if rt.usernsConfigured {
+		namesp := c.Spec.Linux.Namespaces
+		for i, n := range namesp {
+			if n.Type == specs.UserNamespace {
+				rt.Log.Warn().Msg("Preconfigured user namespace is removed from the namespace list.")
+				c.Spec.Linux.Namespaces = append(namesp[0:i], namesp[i+1:]...)
+			}
+		}
+		return
+	}
+
+	if isNamespaceEnabled(c.Spec, specs.UserNamespace) {
+		return
+	}
+
+	enableUserNamespace := false
+
+	if os.Getuid() != 0 {
+		rt.Log.Warn().Msg("unprivileged runtime - enabling user namespace")
+		enableUserNamespace = true
+	}
+
+	if c.Spec.Annotations["org.linuxcontainers.lxcri.userns"] != "" {
+		rt.Log.Warn().Msg("org.linuxcontainers.lxcri.userns annotation - enabling user namespace")
+		enableUserNamespace = true
+	}
+
+	if enableUserNamespace {
+		// TODO load subuid and subgid ranges for container user
+
+		//c.Spec.Process.User.UID = 100000
+		//c.Spec.Process.User.GID = 100000
+
+		c.Spec.Linux.UIDMappings = []specs.LinuxIDMapping{
+			{ContainerID: 0, HostID: 100000, Size: 100},
+		}
+		c.Spec.Linux.GIDMappings = []specs.LinuxIDMapping{
+			{ContainerID: 0, HostID: 100000, Size: 100},
+		}
+
+		c.Spec.Linux.Namespaces = append(c.Spec.Linux.Namespaces,
+			specs.LinuxNamespace{Type: specs.UserNamespace})
+	}
+}
+
+func bindMountDevices(rt *Runtime, c *Container) {
+	// the mknod hook is run in which context (lxc.hook.mount) ?
+	// --> must run in lxc.hook.pre-mount instead !!!
+
+	// if runtime process is not privileged or CAP_MKNOD is not granted `man capabilities`
+	// then bind mount devices instead.
+	//if !rt.isPrivileged() || !rt.hasCapability("mknod") {
+	//	rt.Log.Info().Msg("runtime does not have capability CAP_MKNOD")
+	newMounts := make([]specs.Mount, 0, len(c.Spec.Mounts)+len(c.Spec.Linux.Devices))
+	for _, m := range c.Spec.Mounts {
+		if m.Destination == "/dev" {
+			os.MkdirAll(filepath.Join(c.Spec.Root.Path, "/dev"), 0755)
+			newMounts = append(newMounts,
+				specs.Mount{
+					Destination: m.Destination, Source: "tmpfs", Type: "tmpfs",
+					Options: m.Options,
+				},
+			)
+			rt.Log.Info().Msg("device files are bind mounted")
+			for _, device := range c.Spec.Linux.Devices {
+				newMounts = append(newMounts,
+					specs.Mount{
+						Destination: device.Path, Source: device.Path, Type: "bind",
+						Options: []string{"bind"},
+					},
+				)
+			}
+			continue
+		}
+		newMounts = append(newMounts, m)
+	}
+	c.Spec.Mounts = newMounts
+	c.Spec.Linux.Devices = nil
+}
+
 func configureContainer(rt *Runtime, c *Container) error {
 	if err := c.SetLog(c.LogFile, c.LogLevel); err != nil {
 		return errorf("failed to configure container log (file:%s level:%s): %w", c.LogFile, c.LogLevel, err)
@@ -99,29 +180,23 @@ func configureContainer(rt *Runtime, c *Container) error {
 		return err
 	}
 
-	if err := configureInit(rt, c); err != nil {
-		return fmt.Errorf("failed to configure init: %w", err)
-	}
+	configureUserNamespace(rt, c)
 
-	if rt.usernsConfigured {
-		namesp := c.Spec.Linux.Namespaces
-		for i, n := range namesp {
-			if n.Type == specs.UserNamespace {
-				rt.Log.Warn().Msg("Preconfigured user namespace is removed from the namespace list.")
-				c.Spec.Linux.Namespaces = append(namesp[0:i], namesp[i+1:]...)
-			}
+	/*
+		c.Spec.Linux.UIDMappings = []specs.LinuxIDMapping{
+			{ContainerID: 0, HostID: 100000, Size: 100000},
 		}
-	} else if os.Getuid() != 0 {
-		if !isNamespaceEnabled(c.Spec, specs.UserNamespace) {
-			rt.Log.Warn().Msg("unprivileged runtime - enabling user namespace")
-			c.Spec.Linux.Namespaces = append(c.Spec.Linux.Namespaces,
-				specs.LinuxNamespace{Type: specs.UserNamespace},
-			)
+		c.Spec.Linux.GIDMappings = []specs.LinuxIDMapping{
+			{ContainerID: 0, HostID: 100000, Size: 100000},
 		}
-	}
+	*/
 
 	if err := configureNamespaces(c); err != nil {
 		return fmt.Errorf("failed to configure namespaces: %w", err)
+	}
+
+	if err := configureInit(rt, c); err != nil {
+		return fmt.Errorf("failed to configure init: %w", err)
 	}
 
 	if c.Spec.Process.OOMScoreAdj != nil {
@@ -178,37 +253,7 @@ func configureContainer(rt *Runtime, c *Container) error {
 		return err
 	}
 
-	// if runtime process is not privileged or CAP_MKNOD is not granted `man capabilities`
-	// then bind mount devices instead.
-	if !rt.isPrivileged() || !rt.hasCapability("mknod") {
-		rt.Log.Info().Msg("runtime does not have capability CAP_MKNOD")
-		newMounts := make([]specs.Mount, 0, len(c.Spec.Mounts)+len(c.Spec.Linux.Devices))
-		for _, m := range c.Spec.Mounts {
-			if m.Destination == "/dev" {
-				os.MkdirAll(filepath.Join(c.Spec.Root.Path, "/dev"), 0755)
-				newMounts = append(newMounts,
-					specs.Mount{
-						Destination: m.Destination, Source: "tmpfs", Type: "tmpfs",
-						Options: m.Options,
-					},
-				)
-				rt.Log.Info().Msg("device files are bind mounted")
-				for _, device := range c.Spec.Linux.Devices {
-					newMounts = append(newMounts,
-						specs.Mount{
-							Destination: device.Path, Source: device.Path, Type: "bind",
-							Options: []string{"bind"},
-						},
-					)
-				}
-				continue
-			}
-			newMounts = append(newMounts, m)
-		}
-
-		c.Spec.Mounts = newMounts
-		c.Spec.Linux.Devices = nil
-	}
+	bindMountDevices(rt, c)
 
 	if err := configureHooks(rt, c); err != nil {
 		return err
