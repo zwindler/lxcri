@@ -34,14 +34,14 @@ LXC_SRC_URL="https://linuxcontainers.org/downloads/lxc/$LXC_SRC"
 LXC_SRC_SUM="db242f8366fc63e8c7588bb2017b354173cf3c4b20abc18780debdc48b14d3ef"
 
 # NOTE use https://github.com/lxc/lxcri/tarball/main for development ... (strip components)
-LXCRI_VERSION="v0.12.1"
-LXCRI_SRC="lxcri-${LXCRI_VERSION}.tar.gz"
+LXCRI_VERSION="907aea8"
+LXCRI_SRC="zwindler-lxcri-${LXCRI_VERSION}.tar.gz"
 LXCRI_SRC_URL="https://github.com/zwindler/lxcri/tarball/fixes"
-LXCRI_SRC_SUM="4ff5f9fceeb1d35c92b303113c8e8e2d752e6c0eeb032650fbcd6594128ba0ef"
+LXCRI_SRC_SUM="4e0d250c88e6e004b8657caec74f4a560d4656f987bc4709561a924e3a1bf6a0"
 
-GOLANG="go1.16.4.linux-amd64.tar.gz"
+GOLANG="go1.17.13.linux-amd64.tar.gz"
 GOLANG_URL="https://golang.org/dl/$GOLANG"
-GOLANG_SUM="7154e88f5a8047aad4b80ebace58a059e36e7e2e4eb3b383127a28c711b4ff59"
+GOLANG_SUM="4cdd2bc664724dc7db94ad51b503512c5ae7220951cac568120f64f8e94399fc"
 
 DL=downloads
 download() {
@@ -90,4 +90,5 @@ $BUILD_CMD $@ \
 	--build-arg LXCRI_SRC=$DL/$LXCRI_SRC \
 	--build-arg LXCRI_VERSION=$LXCRI_VERSION \
 	--build-arg GOLANG=$DL/$GOLANG \
+	--build-arg installcmd=install_runtime \
 	--tag github.com/lxc/lxcri:latest
