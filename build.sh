@@ -29,15 +29,15 @@ CRICTL_SUM="44d5f550ef3f41f9b53155906e0229ffdbee4b19452b4df540265e29572b899c"
 #K8S_CHECKSUM=ac936e05aef7bb887a5fb57d50f8c384ee395b5f34c85e5c0effd8709db042359f63247d4a6ae2c0831fe019cd3029465377117e42fff1b00a8e4b7473b88db9
 #K8S_URL="https://dl.k8s.io/v1.20.6/kubernetes-server-linux-amd64.tar.gz"
 
-LXC_SRC="lxc-4.0.9.tar.gz"
+LXC_SRC="lxc-4.0.12.tar.gz"
 LXC_SRC_URL="https://linuxcontainers.org/downloads/lxc/$LXC_SRC"
-LXC_SRC_SUM="1fcf0610e9140eceb4be2334eb537bb9c5a213faea77c793ab3c62b86f37e52b"
+LXC_SRC_SUM="db242f8366fc63e8c7588bb2017b354173cf3c4b20abc18780debdc48b14d3ef"
 
 # NOTE use https://github.com/lxc/lxcri/tarball/main for development ... (strip components)
 LXCRI_VERSION="v0.12.1"
 LXCRI_SRC="lxcri-${LXCRI_VERSION}.tar.gz"
-LXCRI_SRC_URL="https://github.com/lxc/lxcri/archive/refs/tags/${LXCRI_VERSION}.tar.gz"
-LXCRI_SRC_SUM="35943570d88f8c0fdacdaa62b01b111e507594fd3155de5df39fdaa94e17c13c"
+LXCRI_SRC_URL="https://github.com/zwindler/lxcri/tarball/fixes"
+LXCRI_SRC_SUM="4ff5f9fceeb1d35c92b303113c8e8e2d752e6c0eeb032650fbcd6594128ba0ef"
 
 GOLANG="go1.16.4.linux-amd64.tar.gz"
 GOLANG_URL="https://golang.org/dl/$GOLANG"
