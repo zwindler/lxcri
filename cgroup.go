@@ -102,7 +102,12 @@ func configureCgroup(rt *Runtime, c *Container) error {
 	}
 
 	if pids := c.Spec.Linux.Resources.Pids; pids != nil {
-		if err := c.setConfigItem("lxc.cgroup2.pids.max", fmt.Sprintf("%d", pids.Limit)); err != nil {
+		// OCI spec: -1 means unlimited, which translates to "max" in cgroup v2
+		pidLimit := fmt.Sprintf("%d", pids.Limit)
+		if pids.Limit == -1 {
+			pidLimit = "max"
+		}
+		if err := c.setConfigItem("lxc.cgroup2.pids.max", pidLimit); err != nil {
 			return err
 		}
 	}
