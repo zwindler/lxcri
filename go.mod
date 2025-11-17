@@ -1,22 +1,26 @@
 module github.com/lxc/lxcri
 
+go 1.22
+
 require (
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
-	github.com/creack/pty v1.1.12
+	github.com/creack/pty v1.1.24
 	github.com/drachenfels-de/gocapability v0.0.0-20210413092208-755d79b01352
-	github.com/kr/pretty v0.2.1 // indirect
 	github.com/lxc/go-lxc v0.0.0-20230926171149-ccae595aa49e
-	github.com/opencontainers/runtime-spec v1.0.3-0.20200929063507-e6143ca7d51d
-	github.com/rs/zerolog v1.22.0
-	github.com/stretchr/testify v1.6.1
-	github.com/urfave/cli/v2 v2.3.0
-	golang.org/x/sys v0.12.0
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	sigs.k8s.io/yaml v1.2.0
+	github.com/opencontainers/runtime-spec v1.2.0
+	github.com/rs/zerolog v1.33.0
+	github.com/stretchr/testify v1.10.0
+	github.com/urfave/cli/v2 v2.27.5
+	golang.org/x/sys v0.28.0
+	sigs.k8s.io/yaml v1.4.0
 )
 
-replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-
-replace golang.org/x/text => golang.org/x/text v0.3.3
-
-go 1.16
+require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)

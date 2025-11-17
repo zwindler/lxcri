@@ -37,7 +37,7 @@ func init() {
 	//zerolog.TimeFieldFormat = "20060102150405.000"
 
 	zerolog.CallerFieldName = "c"
-	zerolog.CallerMarshalFunc = func(file string, line int) string {
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
 	}
 }
