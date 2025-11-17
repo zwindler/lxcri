@@ -223,19 +223,20 @@ func main() {
 
 	setupCmd := func(ctx *cli.Context) error {
 		switch clxc.command {
-		case "list":
+		case "list", "config", "features":
 			if err := clxc.ConfigureLogger(); err != nil {
 				return err
 			}
-		case "config":
-			// ConfigureLogger changes the logging configuration
-			// if LogConsole is enabled.
-			// The original configuration must be restored.
-			logCfg := clxc.Runtime.LogConfig
-			if err := clxc.ConfigureLogger(); err != nil {
-				return err
+			if clxc.command == "config" {
+				// ConfigureLogger changes the logging configuration
+				// if LogConsole is enabled.
+				// The original configuration must be restored.
+				logCfg := clxc.Runtime.LogConfig
+				if err := clxc.ConfigureLogger(); err != nil {
+					return err
+				}
+				clxc.Runtime.LogConfig = logCfg
 			}
-			clxc.Runtime.LogConfig = logCfg
 		default:
 			containerID := ctx.Args().Get(0)
 			if len(containerID) == 0 {
