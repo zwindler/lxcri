@@ -83,6 +83,8 @@ type Container struct {
 	Pid int
 
 	runtimeDir string
+	// monitorExitStatus stores the exit status when the monitor process dies
+	monitorExitStatus *unix.WaitStatus
 }
 
 func (c *Container) create() error {
@@ -157,6 +159,7 @@ func (c *Container) isMonitorRunning() bool {
 	var ws unix.WaitStatus
 	pid, err := unix.Wait4(c.Pid, &ws, unix.WNOHANG, nil)
 	if pid == c.Pid {
+		c.monitorExitStatus = &ws
 		c.Log.Info().Msgf("monitor %d died: exited:%t exit_status:%d signaled:%t signal:%s",
 			c.Pid, ws.Exited(), ws.ExitStatus(), ws.Signaled(), ws.Signal())
 		return false
@@ -190,7 +193,15 @@ func (c *Container) waitCreated(ctx context.Context) error {
 			return ctx.Err()
 		default:
 			if !c.isMonitorRunning() {
-				return fmt.Errorf("monitor already died")
+				if c.monitorExitStatus != nil {
+					ws := *c.monitorExitStatus
+					if ws.Exited() {
+						return fmt.Errorf("monitor already died with exit status %d (check lxc logs at: %s)", ws.ExitStatus(), c.LogFile)
+					} else if ws.Signaled() {
+						return fmt.Errorf("monitor already died from signal %s (check lxc logs at: %s)", ws.Signal(), c.LogFile)
+					}
+				}
+				return fmt.Errorf("monitor already died (check lxc logs at: %s)", c.LogFile)
 			}
 			state := c.LinuxContainer.State()
 			if !(state == lxc.RUNNING) {

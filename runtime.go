@@ -402,7 +402,10 @@ func (rt *Runtime) runStartCmd(ctx context.Context, c *Container) (err error) {
 		exec.Command("cp", c.ConfigFilePath(), filepath.Join(rt.BackupConfigDir, c.ContainerID+".config")).Run()
 	}
 
-	rt.Log.Debug().Msg("starting lxc monitor process")
+	rt.Log.Debug().
+		Str("config", c.ConfigFilePath()).
+		Str("container", c.LinuxContainer.Name()).
+		Msg("starting lxc monitor process")
 	if c.ConsoleSocket != "" {
 		err = rt.runStartCmdConsole(ctx, cmd, c.ConsoleSocket)
 	} else {
@@ -410,12 +413,15 @@ func (rt *Runtime) runStartCmd(ctx context.Context, c *Container) (err error) {
 	}
 
 	if err != nil {
-		return err
+		return errorf("failed to start monitor process: %w", err)
 	}
 
 	c.CreatedAt = time.Now()
 	c.Pid = cmd.Process.Pid
-	rt.Log.Info().Int("pid", cmd.Process.Pid).Msg("monitor process started")
+	rt.Log.Info().
+		Int("pid", cmd.Process.Pid).
+		Str("lxc_log", c.LogFile).
+		Msg("monitor process started")
 
 	p := c.RuntimePath("lxcri.json")
 	err = specki.EncodeJSONFile(p, c, os.O_EXCL|os.O_CREATE, 0440)
